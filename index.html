@@ -1,35 +1,398 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Spotify Auth</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Playlist Manager</title>
   <style>
-    body { font-family: sans-serif; padding: 2rem; text-align: center; }
-    #code { background: #f0f0f0; padding: 1rem; border-radius: 8px; 
-            word-break: break-all; font-size: 13px; margin: 1rem 0; }
-    button { padding: 10px 20px; font-size: 15px; cursor: pointer; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #222; min-height: 100vh; }
+    .container { max-width: 600px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+    .header svg { flex-shrink: 0; }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .card { background: #fff; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .label { font-size: 12px; color: #888; margin-bottom: 6px; display: block; }
+    input[type=text] { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+    input[type=text]:focus { border-color: #1DB954; }
+    button { padding: 10px 18px; background: #1DB954; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    button:hover { background: #17a349; }
+    button.secondary { background: #fff; color: #444; border: 1px solid #ddd; }
+    button.secondary:hover { background: #f5f5f5; }
+    button.danger { background: #fff; color: #e24b4a; border: 1px solid #e24b4a; padding: 6px 10px; font-size: 12px; }
+    button.danger:hover { background: #fff0f0; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-full { width: 100%; margin-top: 0.75rem; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row input { flex: 1; }
+    .status { font-size: 13px; padding: 8px 12px; border-radius: 8px; margin: 8px 0; }
+    .status.ok { background: #eaf3de; color: #3b6d11; }
+    .status.err { background: #fff0f0; color: #a32d2d; }
+    .status.info { background: #e8f4fd; color: #1a5f8a; }
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+    .playlist-list { display: flex; flex-direction: column; gap: 8px; }
+    .playlist-item { background: #fff; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.07); transition: background 0.15s; }
+    .playlist-item:hover, .playlist-item:active { background: #f0faf4; }
+    .pl-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .pl-img img { width: 48px; height: 48px; object-fit: cover; }
+    .pl-info { flex: 1; min-width: 0; }
+    .pl-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-meta { font-size: 12px; color: #888; margin-top: 2px; }
+    .chevron { color: #ccc; font-size: 18px; }
+    .track-list { display: flex; flex-direction: column; gap: 6px; }
+    .track-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: #f9f9f9; }
+    .track-num { font-size: 12px; color: #aaa; width: 20px; text-align: right; flex-shrink: 0; }
+    .track-info { flex: 1; min-width: 0; }
+    .track-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-artist { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .search-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid #eee; background: #fff; margin-bottom: 6px; }
+    .btn-add { background: #fff; border: 1px solid #1DB954; color: #1DB954; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+    .btn-add:hover { background: #1DB954; color: #fff; }
+    .divider { height: 1px; background: #eee; margin: 1.25rem 0; }
+    .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: 1px solid #ddd; color: #666; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; margin-bottom: 1rem; }
+    .back-btn:hover { background: #f5f5f5; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #1DB954; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -3px; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { font-size: 13px; color: #aaa; text-align: center; padding: 1.5rem 0; }
+    .step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+    .step-num { width: 24px; height: 24px; border-radius: 50%; background: #1DB954; color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-text { font-size: 13px; color: #555; line-height: 1.5; padding-top: 3px; }
+    .user-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+    .user-name { font-size: 14px; font-weight: 500; }
+    .create-row { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+    .create-row input { flex: 1; }
+    #view-callback { display: none; }
+    #view-main { display: none; }
+    #view-detail { display: none; }
   </style>
 </head>
 <body>
-  <h2>Código de autorización</h2>
-  <div id="msg">Procesando...</div>
-  <div id="code"></div>
-  <button id="btn" style="display:none" onclick="copy()">Copiar código</button>
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (code) {
-      document.getElementById('msg').textContent = 'Copia este código y pégalo en Claude:';
-      document.getElementById('code').textContent = code;
-      document.getElementById('btn').style.display = 'inline-block';
-    } else {
-      document.getElementById('msg').textContent = 'No se encontró código. ¿Llegaste aquí directamente?';
-    }
-    function copy() {
-      navigator.clipboard.writeText(code);
-      document.getElementById('btn').textContent = '✓ Copiado';
-    }
-  </script>
+<div class="container">
+
+  <div class="header">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="#1DB954">
+      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.624.624 0 01-.857.207c-2.348-1.435-5.304-1.759-8.785-.964a.624.624 0 11-.277-1.216c3.809-.87 7.076-.496 9.712 1.115.294.18.387.563.207.858zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.781.781 0 01-.973-.519.781.781 0 01.519-.973c3.632-1.102 8.147-.568 11.234 1.329a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.937.937 0 11-.543-1.794c3.532-1.072 9.405-.865 13.115 1.338a.937.937 0 01-.955 1.613z"/>
+    </svg>
+    <h1>Spotify Playlist Manager</h1>
+  </div>
+
+  <!-- VISTA: LOGIN -->
+  <div id="view-login">
+    <div class="card">
+      <div class="step"><div class="step-num">1</div><div class="step-text">Pulsa el botón para conectar con Spotify.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">Autoriza la app en la pantalla de Spotify.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">Volverás aquí automáticamente y verás tus playlists.</div></div>
+      <button class="btn-full" onclick="startAuth()">Conectar con Spotify</button>
+    </div>
+    <div id="login-status"></div>
+  </div>
+
+  <!-- VISTA: MAIN -->
+  <div id="view-main">
+    <div class="user-bar">
+      <span class="user-name" id="user-name"></span>
+      <button class="secondary" onclick="logout()" style="padding:7px 14px; font-size:13px;">Desconectar</button>
+    </div>
+    <div id="main-status"></div>
+
+    <!-- Playlists -->
+    <div id="view-playlists">
+      <p class="section-title">Tus playlists</p>
+      <div class="create-row">
+        <input type="text" id="new-pl-name" placeholder="Nueva playlist..." />
+        <button onclick="createPlaylist()">Crear</button>
+      </div>
+      <div id="playlist-container" class="playlist-list"></div>
+    </div>
+
+    <!-- Detalle playlist -->
+    <div id="view-detail">
+      <button class="back-btn" onclick="backToPlaylists()">← Volver</button>
+      <p class="section-title" id="detail-title"></p>
+
+      <div class="row" style="margin-bottom:1rem;">
+        <input type="text" id="search-input" placeholder="Buscar canción para añadir..." onkeydown="if(event.key==='Enter') searchTracks()" />
+        <button onclick="searchTracks()">Buscar</button>
+      </div>
+      <div id="search-results"></div>
+      <div class="divider"></div>
+      <p style="font-size:13px; color:#888; font-weight:500; margin-bottom:8px;">Canciones en la playlist</p>
+      <div id="track-container" class="track-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CLIENT_ID = 'cb0fe466211d4d159c156e93ca154ffd';
+const REDIRECT_URI = 'https://smsoms.github.io/Spotify-callback';
+const SCOPES = 'playlist-read-private playlist-modify-public playlist-modify-private user-read-private';
+const CV_KEY = 'sp_cv';
+
+let accessToken = '';
+let userId = '';
+let currentPlaylistId = '';
+
+function show(id) {
+  ['view-login','view-main'].forEach(v => {
+    document.getElementById(v).style.display = v === id ? '' : 'none';
+  });
+}
+
+function showDetail(show) {
+  document.getElementById('view-playlists').style.display = show ? 'none' : '';
+  document.getElementById('view-detail').style.display = show ? '' : 'none';
+}
+
+function setStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!msg) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="status ${type}">${msg}</div>`;
+}
+
+function rand(n) {
+  const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const a = new Uint8Array(n);
+  crypto.getRandomValues(a);
+  return Array.from(a).map(v => c[v % c.length]).join('');
+}
+
+async function sha256(s) {
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+}
+
+function b64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function startAuth() {
+  const verifier = rand(64);
+  sessionStorage.setItem(CV_KEY, verifier);
+  localStorage.setItem(CV_KEY, verifier);
+  const challenge = b64url(await sha256(verifier));
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: REDIRECT_URI,
+    scope: SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+  });
+  window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+}
+
+function getVerifier() {
+  return sessionStorage.getItem(CV_KEY) || localStorage.getItem(CV_KEY);
+}
+
+async function handleCallback(code) {
+  const verifier = getVerifier();
+  if (!verifier) { setStatus('login-status', 'Error: no se encontró el code verifier. Intenta de nuevo.', 'err'); show('view-login'); return; }
+
+  setStatus('login-status', '<span class="spinner"></span>Conectando con Spotify...', 'info');
+  show('view-login');
+
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: REDIRECT_URI,
+    client_id: CLIENT_ID,
+    code_verifier: verifier,
+  });
+
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    const data = await res.json();
+    if (!res.ok) { setStatus('login-status', `Error: ${data.error_description || data.error}`, 'err'); return; }
+
+    accessToken = data.access_token;
+    sessionStorage.removeItem(CV_KEY);
+    localStorage.removeItem(CV_KEY);
+    window.history.replaceState({}, '', REDIRECT_URI);
+    await loadUser();
+    show('view-main');
+    showDetail(false);
+    await loadPlaylists();
+  } catch(e) {
+    setStatus('login-status', 'Error de red: ' + e.message, 'err');
+  }
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`https://api.spotify.com/v1${path}`, opts);
+  if (res.status === 204) return null;
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'API error');
+  return data;
+}
+
+async function loadUser() {
+  const me = await api('GET', '/me');
+  userId = me.id;
+  document.getElementById('user-name').textContent = '👋 ' + (me.display_name || me.id);
+}
+
+async function loadPlaylists() {
+  setStatus('main-status', '<span class="spinner"></span>Cargando playlists...', 'info');
+  const container = document.getElementById('playlist-container');
+  container.innerHTML = '';
+  try {
+    const data = await api('GET', '/me/playlists?limit=50');
+    setStatus('main-status', '', '');
+    if (!data.items.length) { container.innerHTML = '<p class="empty">No tienes playlists aún.</p>'; return; }
+    data.items.forEach(pl => {
+      if (!pl) return;
+      const img = pl.images?.[0]?.url;
+      const div = document.createElement('div');
+      div.className = 'playlist-item';
+      div.innerHTML = `
+        <div class="pl-img">${img ? `<img src="${img}" alt="">` : `🎵`}</div>
+        <div class="pl-info">
+          <div class="pl-name">${pl.name}</div>
+          <div class="pl-meta">${pl.tracks.total} canciones · ${pl.public ? 'Pública' : 'Privada'}</div>
+        </div>
+        <span class="chevron">›</span>
+      `;
+      div.onclick = () => openPlaylist(pl.id, pl.name);
+      container.appendChild(div);
+    });
+  } catch(e) {
+    setStatus('main-status', 'Error: ' + e.message, 'err');
+  }
+}
+
+async function createPlaylist() {
+  const name = document.getElementById('new-pl-name').value.trim();
+  if (!name) return;
+  setStatus('main-status', '<span class="spinner"></span>Creando...', 'info');
+  try {
+    await api('POST', `/users/${userId}/playlists`, { name, public: false });
+    document.getElementById('new-pl-name').value = '';
+    setStatus('main-status', `✓ Playlist "${name}" creada.`, 'ok');
+    setTimeout(() => setStatus('main-status', '', ''), 3000);
+    await loadPlaylists();
+  } catch(e) {
+    setStatus('main-status', 'Error: ' + e.message, 'err');
+  }
+}
+
+async function openPlaylist(id, name) {
+  currentPlaylistId = id;
+  document.getElementById('detail-title').textContent = name;
+  document.getElementById('search-results').innerHTML = '';
+  document.getElementById('search-input').value = '';
+  showDetail(true);
+  await loadTracks();
+}
+
+function backToPlaylists() {
+  showDetail(false);
+}
+
+async function loadTracks() {
+  const container = document.getElementById('track-container');
+  container.innerHTML = '<p class="empty"><span class="spinner"></span>Cargando...</p>';
+  try {
+    const data = await api('GET', `/playlists/${currentPlaylistId}/tracks?limit=50&fields=items(track(id,name,artists,uri))`);
+    container.innerHTML = '';
+    if (!data.items.length) { container.innerHTML = '<p class="empty">Playlist vacía.</p>'; return; }
+    data.items.forEach((item, i) => {
+      if (!item?.track) return;
+      const t = item.track;
+      const div = document.createElement('div');
+      div.className = 'track-item';
+      div.innerHTML = `
+        <span class="track-num">${i+1}</span>
+        <div class="track-info">
+          <div class="track-name">${t.name}</div>
+          <div class="track-artist">${t.artists.map(a=>a.name).join(', ')}</div>
+        </div>
+        <button class="danger" onclick="removeTrack('${t.uri}', this)">✕</button>
+      `;
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = `<p class="empty" style="color:#a32d2d;">Error: ${e.message}</p>`;
+  }
+}
+
+async function removeTrack(uri, btn) {
+  btn.disabled = true;
+  try {
+    await api('DELETE', `/playlists/${currentPlaylistId}/tracks`, { tracks: [{ uri }] });
+    await loadTracks();
+  } catch(e) {
+    btn.disabled = false;
+    setStatus('main-status', 'Error al eliminar: ' + e.message, 'err');
+  }
+}
+
+async function searchTracks() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  const container = document.getElementById('search-results');
+  container.innerHTML = '<p class="empty"><span class="spinner"></span>Buscando...</p>';
+  try {
+    const data = await api('GET', `/search?q=${encodeURIComponent(q)}&type=track&limit=5`);
+    container.innerHTML = '';
+    if (!data.tracks.items.length) { container.innerHTML = '<p class="empty">Sin resultados.</p>'; return; }
+    data.tracks.items.forEach(t => {
+      const div = document.createElement('div');
+      div.className = 'search-item';
+      div.innerHTML = `
+        <div class="track-info">
+          <div class="track-name">${t.name}</div>
+          <div class="track-artist">${t.artists.map(a=>a.name).join(', ')}</div>
+        </div>
+        <button class="btn-add" onclick="addTrack('${t.uri}', this)">+ Añadir</button>
+      `;
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = `<p class="empty" style="color:#a32d2d;">Error: ${e.message}</p>`;
+  }
+}
+
+async function addTrack(uri, btn) {
+  btn.disabled = true;
+  btn.textContent = '✓';
+  try {
+    await api('POST', `/playlists/${currentPlaylistId}/tracks`, { uris: [uri] });
+    await loadTracks();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '+ Añadir';
+    setStatus('main-status', 'Error: ' + e.message, 'err');
+  }
+}
+
+function logout() {
+  accessToken = ''; userId = '';
+  show('view-login');
+  setStatus('login-status', '', '');
+}
+
+// INIT — detectar si venimos del callback de Spotify
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+  if (error) {
+    show('view-login');
+    setStatus('login-status', 'Autorización cancelada o error: ' + error, 'err');
+  } else if (code) {
+    await handleCallback(code);
+  } else {
+    show('view-login');
+  }
+})();
+</script>
 </body>
 </html>
