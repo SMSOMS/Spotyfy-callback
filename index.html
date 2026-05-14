@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spotify Auth</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; text-align: center; }
+    #code { background: #f0f0f0; padding: 1rem; border-radius: 8px; 
+            word-break: break-all; font-size: 13px; margin: 1rem 0; }
+    button { padding: 10px 20px; font-size: 15px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Código de autorización</h2>
+  <div id="msg">Procesando...</div>
+  <div id="code"></div>
+  <button id="btn" style="display:none" onclick="copy()">Copiar código</button>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      document.getElementById('msg').textContent = 'Copia este código y pégalo en Claude:';
+      document.getElementById('code').textContent = code;
+      document.getElementById('btn').style.display = 'inline-block';
+    } else {
+      document.getElementById('msg').textContent = 'No se encontró código. ¿Llegaste aquí directamente?';
+    }
+    function copy() {
+      navigator.clipboard.writeText(code);
+      document.getElementById('btn').textContent = '✓ Copiado';
+    }
+  </script>
+</body>
+</html>
